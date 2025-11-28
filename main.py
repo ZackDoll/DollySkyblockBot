@@ -1,7 +1,7 @@
 import datetime
 from openai import OpenAI
 
-import undetected_chromedriver as uc
+import cloudscraper
 
 from typing import Final
 import os
@@ -19,7 +19,7 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-driver = uc.Chrome(headless=True)
+scraper = cloudscraper.create_scraper()
 
 intents: Intents = Intents.default()
 intents.message_content = True #NOQA
@@ -153,11 +153,8 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        driver.get(URL)
-        time.sleep(5)  # allow Cloudflare + JS to render
-
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
+        response = scraper.get(URL)
+        soup = BeautifulSoup(response.text, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
 
@@ -176,10 +173,8 @@ async def scan_for_updates():
                     f.write(last_seen_link)
 
                 # checks the link for stuff
-                headers = {"User-Agent": "Mozilla/5.0"}
-
-                textBlob = requests.get(new_link, headers=headers)
-                soup = BeautifulSoup(textBlob.text, "html.parser")
+                post_response = scraper.get(new_link)
+                soup = BeautifulSoup(post_response.text, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
                 patch_notes_text = post_body.get_text(separator="\n")
