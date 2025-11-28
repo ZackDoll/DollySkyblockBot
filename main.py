@@ -29,6 +29,8 @@ client: Client = Client(intents = intents)
 URL = "https://hypixel.net/forums/skyblock-patch-notes.158/"
 BASE = "https://hypixel.net"
 SAVE_FILE = "last_seen.txt"
+SUBSCRIBERS_FILE = "subscribers.txt"
+subscriber_ids = []
 
 global last_seen_link
 if os.path.exists(SAVE_FILE):
@@ -36,6 +38,16 @@ if os.path.exists(SAVE_FILE):
         last_seen_link = f.read().strip()
 else:
     last_seen_link = None
+
+
+
+if os.path.exists(SUBSCRIBERS_FILE):
+    with open(SUBSCRIBERS_FILE, "r") as f:
+        subscriber_ids = [int(line.strip()) for line in f if line.strip()]
+else:
+    print(f"Warning: {SUBSCRIBERS_FILE} not found. No subscribers loaded.")
+#makes the file if it doesn't exist
+open(SUBSCRIBERS_FILE, "w").close()
 
 chatgptClient = OpenAI(
     api_key = os.getenv("CHATGPT_API_KEY")
@@ -83,18 +95,45 @@ async def send_message(message:Message, user_message: str, uName: str) -> None:
         print(e)
         '''
 
+
 @client.event
 async def on_message(message: Message) -> None:
     if message.author == client.user:
         return
 
-    username = (message.author)
-    user_message: str = message.content
-    channel: str = str(message.channel)
+    user_message = message.content.strip()
 
-    print(f"[{channel}]  {username}: {user_message}")
-    # doesn't exist in this version
-    #await send_message(message, user_message, username)
+    # command to subscribe
+    if user_message.lower() == "!subscribe":
+        user_id = message.author.id
+
+        # check if already subscribed
+        if user_id in subscriber_ids:
+            await message.channel.send(f"{message.author.mention} you're already subscribed!")
+            return
+        # add to subscribers file
+        with open(SUBSCRIBERS_FILE, "a") as f:
+            f.write(f"\n{user_id}")
+
+        # also add to runtime list
+        subscriber_ids.append(user_id)
+
+        await message.channel.send(f"{message.author.mention} subscribed to patch notes!")
+
+    elif user_message.lower() == "!unsubscribe":
+        user_id = message.author.id
+
+        if user_id not in subscriber_ids:
+            await message.channel.send(f"{message.author.mention} you're not subscribed!")
+            return
+        # remove from runtime list
+        subscriber_ids.remove(user_id)
+        # rewrite file without this user
+        with open(SUBSCRIBERS_FILE, "w") as f:
+            for sub_id in subscriber_ids:
+                f.write(f"{sub_id}\n")
+
+        await message.channel.send(f"{message.author.mention} unsubscribed from patch notes!")
 
 async def send_long_message(user, text, limit=1800):
     # Split text into lines
@@ -121,17 +160,11 @@ async def send_long_message(user, text, limit=1800):
 
 async def send_update_message(patch_notes_text, link_to_post):
     try:
-        user_id = 281265330846695425
-        user_id2 = 491078725073633291
-
-        user = await client.fetch_user(user_id)
-        user2 = await client.fetch_user(user_id2)
         response = chatgptClient.responses.create(
             model="gpt-4-turbo",
             instructions="You are a summarizer",
             input=
                 f"You are a strict summarizer. "
-                f"If you exceed this limit, your answer is invalid. "
                 f"Summarize the patch notes below, noting every single change, "
                 f"bullet point them, and group into categories. "
                 f"List every numerical change that happens to anything specifically"
@@ -140,14 +173,14 @@ async def send_update_message(patch_notes_text, link_to_post):
                 f"Be concise but complete. "
                 f"PATCH NOTES: {patch_notes_text}"
         )
-        await user.send("A new patch has been received!")
-        await user2.send("A new patch has been received!")
         text = response.output_text
-        await send_long_message(user, text)
-        await send_long_message(user2, text)
+        #sends message to all subscribers
+        for sub_id in subscriber_ids:
+            user = await client.fetch_user(sub_id)
+            await user.send("A new patch has been received!")
+            await send_long_message(user, text)
+            await user.send(f"Link to post: {link_to_post}")
 
-        await user.send(f"Link to post: {link_to_post}")
-        await user2.send(f"Link to post: {link_to_post}")
     except Exception as e:
         print(f"Error: {e}")
 
