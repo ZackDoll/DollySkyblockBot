@@ -157,6 +157,8 @@ async def scan_for_updates():
         if thread_element:
             new_link = BASE + thread_element["href"]
             thread_title = thread_element.get_text(strip=True)
+            print(f"Current Link: {last_seen_link}")
+            print(f"Top Link: {new_link}")
 
             if new_link and new_link != last_seen_link:
                 print(f"New thread detected: {thread_title}")
