@@ -155,7 +155,7 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        response = scraper.get(URL)
+        response = scraper.get(url=URL, params={'render': 'true'})
         soup = BeautifulSoup(response, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
@@ -175,7 +175,7 @@ async def scan_for_updates():
                     f.write(last_seen_link)
 
                 # checks the link for stuff
-                post_response = scraper.get(url=new_link, render=True)
+                post_response = scraper.get(url=new_link, params={'render': 'true'})
                 soup = BeautifulSoup(post_response, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
@@ -191,7 +191,7 @@ async def scan_for_updates():
         else:
             print("Thread Element not found")
         print(last_seen_link)
-        await asyncio.sleep(1800)
+        await asyncio.sleep(3600)
 
 @client.event
 async def on_ready() -> None:
