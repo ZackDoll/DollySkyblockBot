@@ -113,7 +113,7 @@ async def on_message(message: Message) -> None:
             return
         # add to subscribers file
         with open(SUBSCRIBERS_FILE, "a") as f:
-            f.write(f"\n{user_id}")
+            f.write(f"{user_id}\n")
 
         # also add to runtime list
         subscriber_ids.append(user_id)
