@@ -6,6 +6,8 @@ import cloudscraper
 from typing import Final
 import os
 
+from curl_cffi import requests as curl_requests
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -19,7 +21,13 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-scraper = cloudscraper.create_scraper()
+scraper = cloudscraper.create_scraper(
+    browser={
+        'browser': 'chrome',
+        'platform': 'windows',
+        'desktop': True
+    }
+)
 
 intents: Intents = Intents.default()
 intents.message_content = True #NOQA
@@ -153,7 +161,7 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        response = scraper.get(URL)
+        response = curl_requests.get(URL, impersonate="chrome110")
         soup = BeautifulSoup(response.text, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
