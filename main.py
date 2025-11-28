@@ -179,6 +179,12 @@ async def scan_for_updates():
                 soup = BeautifulSoup(post_response, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
+
+                if post_body is None:
+                    print("ERROR: Could not find post body!")
+                    print(f"HTML preview: {soup.prettify()[:500]}")
+                    continue  # skip this update and try again next scan
+    
                 patch_notes_text = post_body.get_text(separator="\n")
 
                 await send_update_message(patch_notes_text, last_seen_link)
