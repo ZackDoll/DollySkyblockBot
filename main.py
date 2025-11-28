@@ -1,6 +1,11 @@
 import datetime
 from openai import OpenAI
 
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
+
 from typing import Final
 import os
 
@@ -16,6 +21,15 @@ from discord import Intents, Client, Message
 #loads token so user cant see
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
+
+chrome_options = Options()
+chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+
+service = Service("/usr/local/bin/chromedriver")
+driver = webdriver.Chrome(service=service, options=chrome_options)
+
 
 intents: Intents = Intents.default()
 intents.message_content = True #NOQA
@@ -149,12 +163,14 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        response = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
-        print(response.text[:1000])
-        soup = BeautifulSoup(response.text, "html.parser")
+        driver.get(URL)
+    time.sleep(5)  # allow Cloudflare + JS to render
 
-        # Finds the first thread title (ignores stickies if needed by skipping first few)
-        thread_element = soup.select_one("div.structItem-title a")
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+
+    thread_element = soup.select_one("div.structItem-title a")
+
         if thread_element:
             new_link = BASE + thread_element["href"]
             thread_title = thread_element.get_text(strip=True)
