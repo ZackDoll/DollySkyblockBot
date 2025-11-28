@@ -180,6 +180,7 @@ async def scan_for_updates():
         time.sleep(5)  # allow Cloudflare + JS to render
 
         html = driver.page_source
+        print(html[:2000])
         soup = BeautifulSoup(html, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
