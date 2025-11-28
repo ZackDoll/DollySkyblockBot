@@ -164,12 +164,12 @@ async def scan_for_updates():
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
         driver.get(URL)
-    time.sleep(5)  # allow Cloudflare + JS to render
+        time.sleep(5)  # allow Cloudflare + JS to render
 
-    html = driver.page_source
-    soup = BeautifulSoup(html, "html.parser")
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
 
-    thread_element = soup.select_one("div.structItem-title a")
+        thread_element = soup.select_one("div.structItem-title a")
 
         if thread_element:
             new_link = BASE + thread_element["href"]
