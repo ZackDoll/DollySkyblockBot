@@ -175,7 +175,7 @@ async def scan_for_updates():
                     f.write(last_seen_link)
 
                 # checks the link for stuff
-                post_response = scraper.get(url=URL)
+                post_response = scraper.get(url=new_link, render=True)
                 soup = BeautifulSoup(post_response, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
