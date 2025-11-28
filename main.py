@@ -150,6 +150,7 @@ async def scan_for_updates():
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
         response = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
+        print(response.text[:1000])
         soup = BeautifulSoup(response.text, "html.parser")
 
         # Finds the first thread title (ignores stickies if needed by skipping first few)
