@@ -48,3 +48,4 @@ A Discord bot that automatically monitors the Hypixel Skyblock forum for new pat
 ---
 
 ## ⚙️ IF YOU WANT TO SWAP IT TO A DIFF FORUM
+- URL variable (near the top) controls which link it checks over
