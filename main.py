@@ -156,7 +156,7 @@ async def scan_for_updates():
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
         response = scraper.get(URL)
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
 
@@ -176,7 +176,7 @@ async def scan_for_updates():
 
                 # checks the link for stuff
                 post_response = scraper.get(url=URL)
-                soup = BeautifulSoup(response, "html.parser")
+                soup = BeautifulSoup(post_response, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
                 patch_notes_text = post_body.get_text(separator="\n")
