@@ -45,9 +45,9 @@ if os.path.exists(SUBSCRIBERS_FILE):
     with open(SUBSCRIBERS_FILE, "r") as f:
         subscriber_ids = [int(line.strip()) for line in f if line.strip()]
 else:
-    print(f"Warning: {SUBSCRIBERS_FILE} not found. No subscribers loaded.")
-#makes the file if it doesn't exist
-open(SUBSCRIBERS_FILE, "w").close()
+    print(f"Warning: {SUBSCRIBERS_FILE} not found. Creating new file.")
+    # creates the file only if it doesn't exist
+    open(SUBSCRIBERS_FILE, "w").close()
 
 chatgptClient = OpenAI(
     api_key = os.getenv("CHATGPT_API_KEY")
