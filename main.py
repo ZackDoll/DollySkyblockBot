@@ -1,12 +1,11 @@
 import datetime
 from openai import OpenAI
 
-import cloudscraper
+from scraperapi_sdk import ScraperAPIClient
 
 from typing import Final
 import os
 
-from curl_cffi import requests as curl_requests
 
 import requests
 from bs4 import BeautifulSoup
@@ -21,13 +20,8 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-scraper = cloudscraper.create_scraper(
-    browser={
-        'browser': 'chrome',
-        'platform': 'windows',
-        'desktop': True
-    }
-)
+scraper = ScraperAPIClient(os.getenv('SCRAPER_API_KEY'))
+
 
 intents: Intents = Intents.default()
 intents.message_content = True #NOQA
@@ -161,7 +155,7 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        response = curl_requests.get(URL, impersonate="chrome110")
+        response = scraper.get(URL)
         soup = BeautifulSoup(response.text, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
@@ -181,8 +175,8 @@ async def scan_for_updates():
                     f.write(last_seen_link)
 
                 # checks the link for stuff
-                post_response = scraper.get(new_link)
-                soup = BeautifulSoup(post_response.text, "html.parser")
+                post_response = scraper.get(url=URL)
+                soup = BeautifulSoup(response, "html.parser")
 
                 post_body = soup.find("div", class_="bbWrapper")
                 patch_notes_text = post_body.get_text(separator="\n")
@@ -191,7 +185,7 @@ async def scan_for_updates():
         else:
             print("Thread Element not found")
         print(last_seen_link)
-        await asyncio.sleep(300)
+        await asyncio.sleep(1800)
 
 @client.event
 async def on_ready() -> None:
