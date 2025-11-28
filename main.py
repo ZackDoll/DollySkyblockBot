@@ -1,10 +1,7 @@
 import datetime
 from openai import OpenAI
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-
+import undetected_chromedriver as uc
 
 from typing import Final
 import os
@@ -22,27 +19,7 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-chrome_options = Options()
-chrome_options.add_argument("--headless=new")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--disable-blink-features")
-chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-chrome_options.add_argument("--disable-infobars")
-chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-chrome_options.add_experimental_option("useAutomationExtension", False)
-
-chrome_options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
-
-
-
-service = Service("/usr/local/bin/chromedriver")
-driver = webdriver.Chrome(service=service, options=chrome_options)
-
+driver = uc.Chrome(headless=True)
 
 intents: Intents = Intents.default()
 intents.message_content = True #NOQA
@@ -180,7 +157,6 @@ async def scan_for_updates():
         time.sleep(5)  # allow Cloudflare + JS to render
 
         html = driver.page_source
-        print(html[:2000])
         soup = BeautifulSoup(html, "html.parser")
 
         thread_element = soup.select_one("div.structItem-title a")
