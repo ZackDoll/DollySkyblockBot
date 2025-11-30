@@ -224,7 +224,7 @@ async def scan_for_updates():
         else:
             print("Thread Element not found")
         print(last_seen_link)
-        await asyncio.sleep(3600)
+        await asyncio.sleep(5184)
 
 @client.event
 async def on_ready() -> None:
