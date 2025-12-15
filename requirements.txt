@@ -3,4 +3,4 @@ python-dotenv
 openai
 requests
 beautifulsoup4
-scraperapi-sdk
+scrapingant_client

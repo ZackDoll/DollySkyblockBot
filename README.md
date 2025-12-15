@@ -32,7 +32,7 @@ A Discord bot that automatically monitors the Hypixel Skyblock forum for new pat
 - **Discord.py** - Discord bot framework
 - **OpenAI GPT-4** - AI summarization
 - **BeautifulSoup4** - Web scraping
-- **ScraperAPI** - Cloudflare bypass
+- **ScraperAntAPI** - Cloudflare bypass
 - **AWS EC2** - Cloud hosting
 
 ---
@@ -42,7 +42,7 @@ A Discord bot that automatically monitors the Hypixel Skyblock forum for new pat
 - Python 3.12+
 - Discord Bot Token
 - OpenAI API Key
-- ScraperAPI Key (free tier available)
+- ScraperAnt API Key (free tier available)
 - AWS EC2 instance (optional, for 24/7 hosting)
 
 ---
