@@ -161,14 +161,15 @@ async def send_update_message(patch_notes_text, link_to_post):
             model="gpt-4-turbo",
             instructions="You are a summarizer",
             input=
-            f"You are a strict summarizer. "
-            f"Summarize the patch notes below, noting every single change, "
-            f"bullet point them, and group into categories. "
-            f"List every numerical change that happens to anything specifically"
-            f"Ignore any issue reporting sections. "
-            f"Do not include extra commentary. "
-            f"Be concise but complete. "
-            f"PATCH NOTES: {patch_notes_text}"
+            f"Summarize the Hypixel SkyBlock patch notes below. Follow these rules EXACTLY:\n\n"
+            f"1. list EVERY numerical change (damage, health, price, cooldown, percentage, etc.)\n"
+            f"2. format: [item/skill name]: [old value] → [new value]\n"
+            f"3. group changes into categories: new features, balance changes, bug fixes, numerical changes\n"
+            f"4. use bullet points for each item\n"
+            f"5. ignore bug reporting instructions or feedback sections\n"
+            f"6. be complete - do not skip any changes\n\n"
+            f"CRITICAL: if you see ANY number that changed, you MUST include it.\n\n"
+            f"PATCH NOTES:\n{patch_notes_text}"
         )
         text = response.output_text
         # sends message to all subscribers
