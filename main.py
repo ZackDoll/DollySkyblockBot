@@ -195,9 +195,14 @@ async def scan_for_updates():
     global last_seen_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
-        # replaced scraper.get with scrapingant general_request, added browser=False for 1 credit cost
-        response = scraper.general_request(URL, browser=False)
-        soup = BeautifulSoup(response.content, "html.parser")
+        try:
+            response = scraper.general_request(URL, browser=False)
+            soup = BeautifulSoup(response.content, "html.parser")
+        except Exception as e:
+            print("Link Unavailable")
+            print(f"Error log: {e}")
+            await asyncio.sleep(360)
+            continue
 
         thread_element = soup.select_one("div.structItem-title a")
 
