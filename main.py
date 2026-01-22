@@ -19,7 +19,6 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-scraper = ScrapingAntClient(token=os.getenv('SCRAPINGANT_API_KEY'))
 
 intents: Intents = Intents.default()
 intents.message_content = True  # NOQA
@@ -241,7 +240,11 @@ async def scan_for_updates():
 
 @client.event
 async def on_ready() -> None:
+    global scraper
     print(f"{client.user} is now running")
+    print("Initializing scraper")
+    scraper = ScrapingAntClient(token=os.getenv('SCRAPINGANT_API_KEY'))
+    print("Scraper is set up")
     client.loop.create_task(scan_for_updates())
 
 
