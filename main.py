@@ -19,7 +19,6 @@ from discord import Intents, Client, Message
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-
 intents: Intents = Intents.default()
 intents.message_content = True  # NOQA
 client: Client = Client(intents=intents)
@@ -30,11 +29,21 @@ SUBSCRIBERS_FILE = "subscribers.txt"
 subscriber_ids = []
 
 global last_seen_link
+global last_seen_sticky_link
+
 if os.path.exists(SAVE_FILE):
     with open(SAVE_FILE, "r") as f:
         last_seen_link = f.read().strip()
 else:
     last_seen_link = None
+
+# just in case pinned patch is new
+STICKY_SAVE_FILE = "last_seen_sticky.txt"
+if os.path.exists(STICKY_SAVE_FILE):
+    with open(STICKY_SAVE_FILE, "r") as f:
+        last_seen_sticky_link = f.read().strip()
+else:
+    last_seen_sticky_link = None
 
 if os.path.exists(SUBSCRIBERS_FILE):
     with open(SUBSCRIBERS_FILE, "r") as f:
@@ -182,9 +191,9 @@ async def send_update_message(patch_notes_text, link_to_post):
         # sends message to all subscribers
         for sub_id in subscriber_ids:
             user = await client.fetch_user(sub_id)
-            await user.send("A new patch has been received!")
+            await user.send("a new patch has been received!")
             await send_long_message(user, text)
-            await user.send(f"Link to post: {link_to_post}")
+            await user.send(f"link to post: {link_to_post}")
 
     except Exception as e:
         print(f"Error: {e}")
@@ -192,49 +201,98 @@ async def send_update_message(patch_notes_text, link_to_post):
 
 async def scan_for_updates():
     global last_seen_link
+    global last_seen_sticky_link
     while True:
         print(f"Scanned at {datetime.datetime.now()}")
         try:
             response = scraper.general_request(URL, browser=False)
             soup = BeautifulSoup(response.content, "html.parser")
         except Exception as e:
-            print("Link Unavailable")
-            print(f"Error log: {e}")
-            await asyncio.sleep(360)
+            print("link Unavailable")
+            print(f"error log: {e}")
+            await asyncio.sleep(600)
             continue
 
-        thread_element = soup.select_one("div.structItem-title a")
+        # get all thread containers
+        all_threads = soup.select("div.structItem")
 
-        if thread_element:
+        # track if we found threads
+        found_redirect = False
+        found_normal = False
+
+        # loop through threads to check both redirect and normal
+        for thread in all_threads:
+            classes = thread.get("class", [])
+            thread_element = thread.select_one("div.structItem-title a")
+
+            if not thread_element:
+                continue
+
             new_link = BASE + thread_element["href"]
             thread_title = thread_element.get_text(strip=True)
-            print(f"Current Link: {last_seen_link}")
-            print(f"Top Link: {new_link}")
+            is_redirect = "structItem--thread-redirect" in classes
 
-            if new_link and new_link != last_seen_link:
-                print(f"New thread detected: {thread_title}")
-                print(f"Link: {new_link}")
-                last_seen_link = new_link
-                # changes saved link to new_link
-                with open(SAVE_FILE, "w") as f:
-                    f.write(last_seen_link)
+            # check redirect thread
+            if is_redirect and not found_redirect:
+                found_redirect = True
+                print(f"redirect thread: {thread_title}")
 
-                post_response = scraper.general_request(new_link, browser=False)
-                soup = BeautifulSoup(post_response.content, "html.parser")
+                if new_link != last_seen_sticky_link:
+                    print(f"new redirect thread detected: {thread_title}")
+                    print(f"link: {new_link}")
+                    last_seen_sticky_link = new_link
+                    with open(STICKY_SAVE_FILE, "w") as f:
+                        f.write(last_seen_sticky_link)
 
-                post_body = soup.find("div", class_="bbWrapper")
+                    try:
+                        post_response = scraper.general_request(new_link, browser=False)
+                        soup_post = BeautifulSoup(post_response.content, "html.parser")
+                        post_body = soup_post.find("div", class_="bbWrapper")
 
-                if post_body is None:
-                    print("ERROR: Could not find post body!")
-                    print(f"HTML preview: {soup.prettify()[:500]}")
-                    continue  # skip this update and try again next scan
+                        if post_body:
+                            patch_notes_text = post_body.get_text(separator="\n")
+                            await send_update_message(patch_notes_text, new_link)
+                        else:
+                            print("ERROR: could not find post body in redirect!")
+                    except Exception as e:
+                        print(f"error processing redirect: {e}")
 
-                patch_notes_text = post_body.get_text(separator="\n")
+            # check normal thread (first non-redirect)
+            elif not is_redirect and not found_normal:
+                found_normal = True
+                print(f"normal thread: {thread_title}")
+                print(f"current link: {last_seen_link}")
+                print(f"top link: {new_link}")
 
-                await send_update_message(patch_notes_text, last_seen_link)
-        else:
-            print("Thread Element not found")
-        print(last_seen_link)
+                if new_link != last_seen_link:
+                    print(f"new thread detected: {thread_title}")
+                    print(f"link: {new_link}")
+                    last_seen_link = new_link
+                    # changes saved link to new_link
+                    with open(SAVE_FILE, "w") as f:
+                        f.write(last_seen_link)
+
+                    try:
+                        post_response = scraper.general_request(new_link, browser=False)
+                        soup_post = BeautifulSoup(post_response.content, "html.parser")
+                        post_body = soup_post.find("div", class_="bbWrapper")
+
+                        if post_body:
+                            patch_notes_text = post_body.get_text(separator="\n")
+                            await send_update_message(patch_notes_text, new_link)
+                        else:
+                            print("ERROR: could not find post body!")
+                    except Exception as e:
+                        print(f"error processing normal thread: {e}")
+
+            # stop once we've checked both
+            if found_redirect and found_normal:
+                break
+
+        if not found_normal:
+            print("thread element not found")
+
+        print(f"stored links - normal: {last_seen_link}, redirect: {last_seen_sticky_link}")
         await asyncio.sleep(600)
 
 
@@ -242,9 +300,9 @@ async def scan_for_updates():
 async def on_ready() -> None:
     global scraper
     print(f"{client.user} is now running")
-    print("Initializing scraper")
+    print("initializing scraper")
     scraper = ScrapingAntClient(token=os.getenv('SCRAPINGANT_API_KEY'))
-    print("Scraper is set up")
+    print("scraper is set up")
     client.loop.create_task(scan_for_updates())
 
 
