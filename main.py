@@ -217,10 +217,10 @@ async def scan_for_updates():
         all_threads = soup.select("div.structItem")
 
         # track if we found threads
-        found_redirect = False
-        found_normal = False
+        found_sticky_redirect = False
+        found_normal_redirect = False
 
-        # loop through threads to check both redirect and normal
+        # loop through threads to check sticky redirect and normal redirect
         for thread in all_threads:
             classes = thread.get("class", [])
             thread_element = thread.select_one("div.structItem-title a")
@@ -232,13 +232,18 @@ async def scan_for_updates():
             thread_title = thread_element.get_text(strip=True)
             is_redirect = "structItem--thread-redirect" in classes
 
-            # check redirect thread
-            if is_redirect and not found_redirect:
-                found_redirect = True
-                print(f"redirect thread: {thread_title}")
+            # check parent for sticky class
+            parent = thread.parent
+            parent_classes = parent.get("class", []) if parent else []
+            is_sticky = "structItemContainer-group--sticky" in parent_classes
+
+            # check sticky redirect thread (pinned redirect)
+            if is_redirect and is_sticky and not found_sticky_redirect:
+                found_sticky_redirect = True
+                print(f"sticky redirect thread: {thread_title}")
 
                 if new_link != last_seen_sticky_link:
-                    print(f"new redirect thread detected: {thread_title}")
+                    print(f"new sticky redirect thread detected: {thread_title}")
                     print(f"link: {new_link}")
                     last_seen_sticky_link = new_link
                     with open(STICKY_SAVE_FILE, "w") as f:
@@ -253,19 +258,19 @@ async def scan_for_updates():
                             patch_notes_text = post_body.get_text(separator="\n")
                             await send_update_message(patch_notes_text, new_link)
                         else:
-                            print("ERROR: could not find post body in redirect!")
+                            print("ERROR: could not find post body in sticky redirect!")
                     except Exception as e:
-                        print(f"error processing redirect: {e}")
+                        print(f"error processing sticky redirect: {e}")
 
-            # check normal thread (first non-redirect)
-            elif not is_redirect and not found_normal:
-                found_normal = True
-                print(f"normal thread: {thread_title}")
+            # check normal redirect thread (first non-sticky redirect)
+            elif is_redirect and not is_sticky and not found_normal_redirect:
+                found_normal_redirect = True
+                print(f"normal redirect thread: {thread_title}")
                 print(f"current link: {last_seen_link}")
                 print(f"top link: {new_link}")
 
                 if new_link != last_seen_link:
-                    print(f"new thread detected: {thread_title}")
+                    print(f"new redirect thread detected: {thread_title}")
                     print(f"link: {new_link}")
                     last_seen_link = new_link
                     # changes saved link to new_link
@@ -283,16 +288,16 @@ async def scan_for_updates():
                         else:
                             print("ERROR: could not find post body!")
                     except Exception as e:
-                        print(f"error processing normal thread: {e}")
+                        print(f"error processing normal redirect: {e}")
 
-            # stop once we've checked both
-            if found_redirect and found_normal:
+            # stop once we've checked both types
+            if found_sticky_redirect and found_normal_redirect:
                 break
 
-        if not found_normal:
-            print("thread element not found")
+        if not found_normal_redirect:
+            print("normal redirect thread not found")
 
-        print(f"stored links - normal: {last_seen_link}, redirect: {last_seen_sticky_link}")
+        print(f"stored links - normal redirect: {last_seen_link}, sticky redirect: {last_seen_sticky_link}")
         await asyncio.sleep(600)
 
 
