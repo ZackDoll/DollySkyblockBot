@@ -266,7 +266,7 @@ async def scan_for_updates():
                 print(f"normal thread: {thread_title}")
                 print(f"current link: {last_seen_link}")
                 print(f"top link: {new_link}")
-
+        #what
                 if new_link != last_seen_link:
                     print(f"new thread detected: {thread_title}")
                     print(f"link: {new_link}")
